@@ -82,5 +82,6 @@ dependencies {
     implementation("androidx.room:room-guava:$room_version")
     testImplementation("androidx.room:room-testing:$room_version")
     implementation("androidx.room:room-paging:$room_version")
+    implementation("io.coil-kt:coil-compose:2.4.0")
 
 }

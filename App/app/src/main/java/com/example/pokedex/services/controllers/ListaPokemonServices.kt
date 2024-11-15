@@ -21,7 +21,12 @@ class ListaPokemonServices : BaseService() {
 
                 val data = response.body()
                 if (response.isSuccessful && data != null) {
-                    success(data.pokemon_entries)
+                    val pokemonList = data.pokemon_entries.map { entry ->
+                        entry.copy(
+                            image_url = generateSpriteUrl(entry.entry_number)
+                        )
+                    }
+                    success(pokemonList)
                 } else {
                     success(emptyList())
                 }
@@ -30,6 +35,9 @@ class ListaPokemonServices : BaseService() {
                 error()
             }
         }
+    }
+    private fun generateSpriteUrl(entryNumber: Int): String {
+        return "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/$entryNumber.png"
     }
 
 }
