@@ -6,6 +6,6 @@ import retrofit2.http.GET
 import retrofit2.http.Path
 
 interface PokemonEndpoint {
-    @GET("/pokemon/{pokemon_name}")
+    @GET("pokemon/{pokemon_name}")
     suspend fun getPokemonDetails(@Path("pokemon_name") pokemonName: String): Response<Pokemon>
 }

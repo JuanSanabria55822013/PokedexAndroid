@@ -8,7 +8,7 @@ class PokemonDiverAdapter {
 
     fun getPokemonDetails(
         pokemonName: String,
-        loadData: (details: Pokemon) -> Unit,
+        loadData: (Pokemon) -> Unit,
         errorData: () -> Unit
     ) {
         this.service.getPokemonDetails(

@@ -24,6 +24,7 @@ class PokemonServices : BaseService() {
                 if (response.isSuccessful && data != null) {
                     success(data)
                 } else {
+                    println("Error en la respuesta de la API: ${response.errorBody()?.string()}")
                     error()
                 }
             } catch (e: Exception) {
