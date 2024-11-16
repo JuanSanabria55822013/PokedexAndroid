@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
@@ -25,6 +26,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallTopAppBar
@@ -76,15 +78,15 @@ class RegionActivity : ComponentActivity() {
             }
         PokemonListScreen(pokemonList = pokemonList,
             regionName = regionName,
-            onClickPokemon = { pokemonName -> goToDetallePokemon(pokemonName) },
+            onClickPokemon = { pokemonName -> goToDetallePokemon(pokemonName, regionName) },
             volver = {Volver()}
         )
     }
 }
-    private fun goToDetallePokemon(pokemonName: String) {
+    private fun goToDetallePokemon(pokemonName: String, regionName: String) {
         val intent = Intent(this, PokemonActivity::class.java).apply {
             putExtra("pokemon_name", pokemonName)
-        }
+        }.apply { putExtra("region_name", regionName) }
         startActivity(intent)
     }
     private fun Volver(){
@@ -112,6 +114,11 @@ fun PokemonListScreen(
                 Column {
                     SmallTopAppBar(
                         title = { Text(text = "Región: ${regionName.replaceFirstChar { it.uppercase() }}") },
+                        navigationIcon = {
+                            IconButton( onClick = {volver()}) {
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.onPrimary)
+                            }
+                        },
                         colors = TopAppBarDefaults.smallTopAppBarColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             titleContentColor = MaterialTheme.colorScheme.onPrimary
@@ -128,14 +135,6 @@ fun PokemonListScreen(
                             Icon(imageVector = Icons.Default.Search, contentDescription = "Buscar")
                         }
                     )
-                    Button(
-                        onClick = {volver()},
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Text("Volver a Regiones")
-                    }
                 }
             }
         ) { innerPadding ->
@@ -186,6 +185,14 @@ fun PokemonItem(
                 .clickable { onClickPokemon(pokemonEntry.pokemon_species.name) },
             elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
         ) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxSize()
+            ){   Image(
+                painter = rememberAsyncImagePainter(pokemonEntry.image_url),
+                contentDescription = "${pokemonEntry.pokemon_species.name} sprite",
+                modifier = Modifier.size(140.dp)
+            )}
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -193,12 +200,6 @@ fun PokemonItem(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Image(
-                    painter = rememberAsyncImagePainter(pokemonEntry.image_url),
-                    contentDescription = "${pokemonEntry.pokemon_species.name} sprite",
-                    modifier = Modifier.size(64.dp)
-                )
-
                 Text(
                     text = pokemonEntry.pokemon_species.name.replaceFirstChar { it.uppercase() },
                     style = MaterialTheme.typography.titleMedium,

@@ -14,9 +14,13 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Pokedex"
         tools:targetApi="31">
+        <activity android:name="com.example.pokedex.PokemonActivity"
+            android:exported = "false"
+            android:label="PokemonActivity"
+            android:theme = "@style/Theme.Pokedex"/>
         <activity android:name="com.example.pokedex.RegionActivity"
             android:exported = "false"
-            android:label="PokemonsActivity"
+            android:label="RegionActivity"
             android:theme = "@style/Theme.Pokedex"/>
         <activity
             android:name="com.example.pokedex.MainActivity"

@@ -18,7 +18,6 @@ class ListaPokemonServices : BaseService() {
                 val response = getRetrofit()
                     .create(ListaPokemonEndpoint::class.java)
                     .getPokemonsByRegion(regionName)
-
                 val data = response.body()
                 if (response.isSuccessful && data != null) {
                     val pokemonList = data.pokemon_entries.map { entry ->
