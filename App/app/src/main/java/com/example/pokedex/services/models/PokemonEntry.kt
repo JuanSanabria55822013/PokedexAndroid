@@ -3,5 +3,5 @@ package com.example.pokedex.services.models
 data class PokemonEntry(
     val entry_number: Int,
     val pokemon_species: PokemonSpecies,
-    val image_url: String? = null
+    val image_url: String,
 )

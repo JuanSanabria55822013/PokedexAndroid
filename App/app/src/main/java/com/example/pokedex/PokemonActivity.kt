@@ -37,9 +37,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.example.pokedex.services.driverAdapters.EvolutionChainDiverAdapter
 import com.example.pokedex.services.driverAdapters.PokemonDiverAdapter
 import com.example.pokedex.services.models.Ability
 import com.example.pokedex.services.models.AbilityEntry
+import com.example.pokedex.services.models.EvolutionChain
 import com.example.pokedex.services.models.Pokemon
 import com.example.pokedex.services.models.Type
 import com.example.pokedex.services.models.TypeEntry
@@ -48,6 +50,8 @@ import com.example.pokedex.ui.theme.PokedexTheme
 class PokemonActivity : ComponentActivity() {
 
     val PokemonDiverAdapter by lazy { PokemonDiverAdapter() }
+    private val evolutionChainDiverAdapter by lazy { EvolutionChainDiverAdapter() }
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,6 +59,7 @@ class PokemonActivity : ComponentActivity() {
             val pokemonName = intent.getStringExtra("pokemon_name") ?: return@setContent
             val regionName = intent.getStringExtra("region_name") ?: return@setContent
             var pokemonDetails by remember { mutableStateOf<Pokemon?>(null) }
+            var evolutionChain by remember { mutableStateOf<List<EvolutionChain>?>(null) }
             var loadDetails by remember { mutableStateOf(false) }
 
             if (!loadDetails) {
@@ -64,6 +69,7 @@ class PokemonActivity : ComponentActivity() {
                     loadData = {
                         pokemonDetails = it
                         loadDetails = true
+
                     },
                     errorData = {
                         println("Error al cargar los detalles del Pokémon")
@@ -158,7 +164,6 @@ fun PokemonDetailScreen(
                     }
                 }
 
-                // Información general
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -248,7 +253,7 @@ fun PokemonDetailScreenPreview() {
         name = "bulbasaur",
         height = 7,
         weight = 69,
-        types = listOf(TypeEntry(Type(name = "grass")), TypeEntry(Type(name = "poison"))),
+        types = listOf(TypeEntry(Type(name = "grass" )), TypeEntry(Type(name = "poison"))),
         abilities = listOf(
             AbilityEntry(Ability(name = "overgrow")),
             AbilityEntry(Ability(name = "chlorophyll"))
@@ -257,3 +262,4 @@ fun PokemonDetailScreenPreview() {
     )
     PokemonDetailScreen(pokemonDetails = samplePokemon, pokemonName = "bulbasaur", volver = {}, regionName = "Kanto")
 }
+

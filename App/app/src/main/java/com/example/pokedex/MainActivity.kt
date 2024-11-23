@@ -66,10 +66,15 @@ class MainActivity : ComponentActivity() {
                 )
             }
             RegionesScreen(regiones = regiones,
-                onClickRegion = { regionName -> goToPokemons(regionName) })
+                onClickRegion = { regionName -> goToPokemons(regionName) },
+                irFavoritos = {goToFavoritos()})
         }
     }
 
+    fun goToFavoritos(){
+        val intent = Intent( this, FavoritosActivity::class.java)
+        startActivity(intent)
+    }
     fun goToPokemons(regionName: String) {
         val intent = Intent(this, RegionActivity::class.java).apply {
             putExtra("region_name", regionName)
@@ -81,7 +86,8 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun RegionesScreen(
         regiones: List<Region>,
-        onClickRegion: (String) -> Unit
+        onClickRegion: (String) -> Unit,
+        irFavoritos: () -> Unit
     ) {
         PokedexTheme {
             Scaffold(
@@ -92,18 +98,31 @@ class MainActivity : ComponentActivity() {
                     )
                 }
             ) { innerPadding ->
-                LazyColumn(
+                Column(
                     modifier = Modifier
+                        .fillMaxSize()
                         .padding(innerPadding)
-                        .padding(16.dp)
-                ) {
-                    items(
-                        items = regiones,
-                        key = { it.name }
-                    ) { region ->
-                        RegionItem(region = region, onClickRegion = onClickRegion)
+                        .padding(5.dp) // Espaciado interno adicional
+                ){
+                    Button(
+                        onClick = irFavoritos,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                    ) {
+                        Text("Favoritos")
+                    }
+                    LazyColumn(
+                        modifier = Modifier
+                    ) {
+                        items(
+                            items = regiones,
+                            key = { it.name }
+                        ) { region ->
+                            RegionItem(region = region, onClickRegion = onClickRegion)
+                        }
                     }
                 }
+
             }
         }
     }
@@ -147,7 +166,9 @@ class MainActivity : ComponentActivity() {
     fun RegionesScreenPreview() {
         RegionesScreen(
             regiones = emptyList(),
-            onClickRegion = {}
+            onClickRegion = {},
+            irFavoritos = {}
+
         )
     }
 }
