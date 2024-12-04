@@ -5,6 +5,6 @@ import retrofit2.Response
 import retrofit2.http.GET
 
 interface RegionesEndpoints {
-    @GET("/api/v2/region")
+    @GET("pokedex")
     suspend fun getAllRegiones(): Response<RegionResponse>
 }

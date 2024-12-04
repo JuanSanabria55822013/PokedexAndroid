@@ -1,7 +1,9 @@
 package com.example.pokedex.services.driverAdapters
 
+import TypeFiltro
 import com.example.pokedex.services.controllers.TypeService
-import com.example.pokedex.services.models.TypeFiltro
+import com.example.pokedex.services.models.TypePokemon
+
 
 class TypeAdapter {
     private val service = TypeService()
@@ -14,6 +16,17 @@ class TypeAdapter {
             success = { loadData(it) },
             error = { errorData() }
         )
-        println("que es lo que manada joder ${loadData}")
     }
-}
+
+    fun getPokemonsByType(
+        tipo: String,
+        loadData: (List<TypePokemon>) -> Unit,
+        errorData: () -> Unit
+    ) {
+            service.getPokemonsByType(
+                tipo = tipo,
+                success = { loadData(it)  },
+                error = { errorData()  }
+            )
+        }
+    }

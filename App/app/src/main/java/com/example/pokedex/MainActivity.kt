@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,7 +26,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallTopAppBar
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,8 +34,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.myapplicationwebservice.R
@@ -66,7 +68,7 @@ class MainActivity : ComponentActivity() {
                 )
             }
             RegionesScreen(regiones = regiones,
-                onClickRegion = { regionName -> goToPokemons(regionName) },
+                onClickRegion = { regionName, regionID -> goToPokemons(regionName, regionID) },
                 irFavoritos = {goToFavoritos()})
         }
     }
@@ -75,10 +77,10 @@ class MainActivity : ComponentActivity() {
         val intent = Intent( this, FavoritosActivity::class.java)
         startActivity(intent)
     }
-    fun goToPokemons(regionName: String) {
+    fun goToPokemons(regionName: String, regionID: Int) {
+        println("regionName = ${regionName} regionID = ${regionID}")
         val intent = Intent(this, RegionActivity::class.java).apply {
-            putExtra("region_name", regionName)
-        }
+            putExtra("region_name", regionName)}.apply { putExtra("regionID", regionID)}
         startActivity(intent)
     }
 
@@ -86,33 +88,49 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun RegionesScreen(
         regiones: List<Region>,
-        onClickRegion: (String) -> Unit,
+        onClickRegion: (String, Int) -> Unit,
         irFavoritos: () -> Unit
     ) {
         PokedexTheme {
             Scaffold(
                 topBar = {
                     SmallTopAppBar(
-                        title = { Text(text = stringResource(id = R.string.title_regiones)) },
-                        colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                        title = {
+                            Text(
+                                text = "POKEDEX",
+                                style = MaterialTheme.typography.headlineLarge,
+                                textAlign = TextAlign.Center,
+                                color = colorResource(R.color.white)
+                            )
+                        },
+                        colors = TopAppBarDefaults.smallTopAppBarColors(
+                            containerColor = colorResource(R.color.AzulSecundario)
+                        )
                     )
-                }
+                },
+                containerColor = colorResource(R.color.white) // Fondo pastel
             ) { innerPadding ->
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(innerPadding)
-                        .padding(5.dp) // Espaciado interno adicional
-                ){
+                        .padding(16.dp),
+                ) {
                     Button(
                         onClick = irFavoritos,
                         modifier = Modifier
                             .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        shape = MaterialTheme.shapes.large,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = colorResource(R.color.AzulSecundario),
+                            contentColor = colorResource(R.color.white)
+                        )
                     ) {
-                        Text("Favoritos")
+                        Text(text = "Favoritos", style = MaterialTheme.typography.titleLarge)
                     }
                     LazyColumn(
-                        modifier = Modifier
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         items(
                             items = regiones,
@@ -122,7 +140,6 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-
             }
         }
     }
@@ -130,43 +147,52 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun RegionItem(
         region: Region,
-        onClickRegion: (String) -> Unit
+        onClickRegion: (String, Int) -> Unit
     ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp)
-                .clickable { onClickRegion(region.name) },
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                .padding(horizontal = 8.dp)
+                .clickable { onClickRegion(region.name, region.url.split("/").dropLast(1).last().toInt()) },
+            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+            shape = MaterialTheme.shapes.medium,
+            colors = CardDefaults.cardColors(
+                containerColor = colorResource(R.color.AzulTerciario)
+            )
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(20.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = region.name.replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(end = 8.dp)
+                    style = MaterialTheme.typography.titleLarge,
+                    color = colorResource(R.color.black)
                 )
                 Icon(
                     imageVector = Icons.Default.ArrowForward,
-                    contentDescription = stringResource(id = R.string.go_to_Region),
-                    tint = MaterialTheme.colorScheme.primary
+                    contentDescription = "Ir a región",
+                    tint = colorResource(R.color.AzulPrincipal)
                 )
             }
         }
     }
 
-
     @Preview(showBackground = true, widthDp = 360)
+
+
     @Composable
     fun RegionesScreenPreview() {
+        val fakeRegions = listOf(
+            Region(name = "national", url = "https://pokeapi.co/api/v2/region/1/"),
+            Region(name = "Kanto", url = "https://pokeapi.co/api/v2/region/2/")
+        )
         RegionesScreen(
-            regiones = emptyList(),
-            onClickRegion = {},
+            regiones = fakeRegions,
+            onClickRegion = { name, id -> println("Clicked region: $name, ID: $id") },
             irFavoritos = {}
 
         )

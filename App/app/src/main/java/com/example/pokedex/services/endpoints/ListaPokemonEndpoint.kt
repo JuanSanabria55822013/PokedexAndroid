@@ -6,7 +6,7 @@ import retrofit2.http.GET
 import retrofit2.http.Path
 
 interface ListaPokemonEndpoint {
-    @GET("pokedex/{region_name}")
-    suspend fun getPokemonsByRegion(@Path("region_name") regionName: String): Response<PokedexResponse>
+    @GET("pokedex/{regionName}")
+    suspend fun getPokemonsByRegion(@Path("regionName") regionName: String): Response<PokedexResponse>
 
 }

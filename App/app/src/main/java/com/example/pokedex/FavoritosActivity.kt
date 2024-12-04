@@ -4,30 +4,27 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FabPosition
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -43,8 +40,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.example.myapplicationwebservice.R
 import com.example.pokedex.dataBases.Entities.PokemonEntity
 import com.example.pokedex.dataBases.viewsModels.PokemonFavoritos
 
@@ -70,7 +69,6 @@ class FavoritosActivity : ComponentActivity() {
     @Composable
     fun FavoritosScreen(viewModel: PokemonFavoritos) {
         val favoritos = remember { mutableStateOf<List<PokemonEntity>>(emptyList()) }
-
         var showDeleteModal by remember { mutableStateOf(false) }
         var selectedPokemon by remember { mutableStateOf<PokemonEntity?>(null) }
 
@@ -83,13 +81,23 @@ class FavoritosActivity : ComponentActivity() {
         Scaffold(
             topBar = {
                 SmallTopAppBar(
-                    title = { Text("Pokémons Favoritos", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onPrimary)},
+                    title = {
+                        Text(
+                            "Pokémons Favoritos",
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = colorResource(R.color.white)
+                        )
+                    },
                     navigationIcon = {
                         IconButton(onClick = { Volver() }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.onPrimary)
+                            Icon(
+                                Icons.Default.ArrowBack,
+                                contentDescription = "Volver",
+                                tint = colorResource(R.color.white)
+                            )
                         }
                     },
-                    colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = MaterialTheme.colorScheme.primary)
+                    colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = colorResource(R.color.RojoPokemon))
                 )
             },
         ) { innerPadding ->
@@ -102,26 +110,40 @@ class FavoritosActivity : ComponentActivity() {
                     FavoritoItem(
                         pokemon = pokemon,
                         onDelete = {
-                            selectedPokemon = pokemon // Seleccionar el Pokémon
-                            showDeleteModal = true // Mostrar el modal
+                            selectedPokemon = pokemon
+                            showDeleteModal = true
                         }
                     )
                 }
             }
+
             if (showDeleteModal && selectedPokemon != null) {
                 AlertDialog(
                     onDismissRequest = { showDeleteModal = false },
                     confirmButton = {
-                        Button(onClick = {
-                            viewModel.deletePokemonFavorito(selectedPokemon!!.id) // Eliminar el Pokémon
-                            favoritos.value = favoritos.value.filter { it.id != selectedPokemon!!.id } // Actualizar la lista
-                            showDeleteModal = false // Cerrar el modal
-                        }) {
+                        Button(
+                            onClick = {
+                                viewModel.deletePokemonFavorito(selectedPokemon!!.id)
+                                favoritos.value =
+                                    favoritos.value.filter { it.id != selectedPokemon!!.id }
+                                showDeleteModal = false
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = colorResource(R.color.RojoPokemon),
+                                contentColor = colorResource(R.color.white)
+                            )
+                        ) {
                             Text("Eliminar")
                         }
                     },
                     dismissButton = {
-                        Button(onClick = { showDeleteModal = false }) {
+                        Button(
+                            onClick = { showDeleteModal = false },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = colorResource(R.color.RojoPokemon),
+                                contentColor = colorResource(R.color.white)
+                            )
+                        ) {
                             Text("Cancelar")
                         }
                     },
@@ -137,40 +159,84 @@ class FavoritosActivity : ComponentActivity() {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(3.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
+                .padding(8.dp),
+            colors = CardDefaults.cardColors(containerColor = colorResource(R.color.RojoSegundario))
         ) {
-                Box(
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                ){
-                    Image(
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+
+            ) {
+                Image(
                         painter = rememberAsyncImagePainter(pokemon.imgUrl),
                         contentDescription = null,
                         modifier = Modifier
-                            .size(240.dp)
-                            .padding(1.dp)
-                    )
-                }
-            Box(modifier = Modifier.align(Alignment.CenterHorizontally)){
+                            .size(200.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = pokemon.name,
+                    text = pokemon.name.capitalize(),
                     style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = colorResource(R.color.black),
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
                 )
-            }
-            Column(
-                modifier = Modifier.padding(1.dp).align(Alignment.CenterHorizontally)
-            ) {
-
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    pokemon.types.split(",").forEach { type ->
+                        Box(
+                            modifier = Modifier
+                                .background(colorResource(R.color.RojoPokemon))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = type.capitalize(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = colorResource(R.color.white)
+                            )
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Altura: ${pokemon.height}, Peso: ${pokemon.weight}",
+                    text = "Altura: ${pokemon.height / 10.0} m | Peso: ${pokemon.weight / 10.0} kg",
                     style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    color = colorResource(R.color.black)
                 )
-            }
-            Button(onClick = { onDelete() },
-                modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                Text("Eliminar", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "Base Stats",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = colorResource(R.color.black)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                pokemon.stats.split(",").forEach { stat ->
+                    val (name, value) = stat.split(":").map { it.trim() }
+                    Column {
+                        Text(
+                            text = "${name}: ${value}",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Habilidades: ${pokemon.abilities.replace(",", ", ")}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = colorResource(R.color.black)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = { onDelete() },
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = colorResource(R.color.RojoPokemon),
+                        contentColor = colorResource(R.color.white)
+                    )
+                ) {
+                    Text("Eliminar")
+                }
             }
         }
     }

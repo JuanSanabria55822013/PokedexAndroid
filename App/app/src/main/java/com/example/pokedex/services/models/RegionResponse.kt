@@ -6,3 +6,8 @@ data class RegionResponse(
     val previous: String?,
     val results: List<Region>
 )
+
+data class Region(
+    var name: String,
+    var url: String
+)

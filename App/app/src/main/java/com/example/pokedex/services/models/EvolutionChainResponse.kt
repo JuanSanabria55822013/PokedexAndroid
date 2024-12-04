@@ -5,3 +5,13 @@ data class EvolutionChainResponse(
     val baby_trigger_item: Any?, // Puede ser un objeto o nulo
     val chain: EvolutionChain
 )
+
+data class EvolutionChain(
+    val species: EvolutionSpecies,
+    val evolves_to: List<EvolutionChain>
+)
+
+data class EvolutionSpecies(
+    val name: String,
+    val url: String
+)

@@ -22,7 +22,7 @@ class PokemonServices : BaseService() {
                 val data = response.body()
                 if (response.isSuccessful && data != null) {
                     val pokemonConImg = data.copy(
-                        imgUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${data.id}.png"
+                        imgUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${data.id}.png"
                     )
                     success(pokemonConImg)
                 } else {
@@ -35,4 +35,6 @@ class PokemonServices : BaseService() {
             }
         }
     }
+
+
 }

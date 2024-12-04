@@ -1,10 +1,37 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="purple_200">#E8B6F8</color>
+    <color name="purple_500">#C084F5</color>
+    <color name="purple_700">#A764E4</color>
+    <color name="teal_200">#A4EFE1</color>
+    <color name="teal_700">#78C2A4</color>
+    <color name="black">#000000</color>
+    <color name="white">#F9F9F9</color>
+    <color name="AzulPrincipal">#0A58A3</color>
+    <color name="AzulSecundario">#698ff0</color>
+    <color name="AzulTerciario">#bbdffb</color>
+    <color name="RojoPokemon">#d53b47</color>
+    <color name="RojoSegundario">#D6ABAF</color>
+    <color name="AmarilloPokemon">#FFEDB8</color>
+    <color name="VerdePokemon">#52d9bb</color>
+    <color name="VerdeOscuro">#5C8683</color>
+    <color name="VerderSuave">#7FA7A3</color>
+    <color name="VerdeClaro">#CAD9D3</color>
+
+    <!-- Colores para los tipos de Pokémon -->
+    <color name="fire">#F08030</color>
+    <color name="water">#6890F0</color>
+    <color name="grass">#78C850</color>
+    <color name="electric">#F8D030</color>
+    <color name="ice">#98D8D8</color>
+    <color name="flying">#A890F0</color>
+    <color name="poison">#A040A0</color>
+    <color name="ground">#E0C068</color>
+    <color name="rock">#B8A038</color>
+    <color name="psychic">#F85888</color>
+    <color name="ghost">#705898</color>
+    <color name="dark">#705848</color>
+    <color name="gray">#A8A8A8</color>
+
+
 </resources>

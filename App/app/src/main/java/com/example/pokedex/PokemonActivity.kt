@@ -6,22 +6,27 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -34,14 +39,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.motionEventSpy
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.example.myapplicationwebservice.R
 import com.example.pokedex.services.driverAdapters.EvolutionChainDiverAdapter
 import com.example.pokedex.services.driverAdapters.PokemonDiverAdapter
 import com.example.pokedex.services.models.Ability
 import com.example.pokedex.services.models.AbilityEntry
 import com.example.pokedex.services.models.EvolutionChain
+import com.example.pokedex.services.models.EvolutionSpecies
 import com.example.pokedex.services.models.Pokemon
 import com.example.pokedex.services.models.Type
 import com.example.pokedex.services.models.TypeEntry
@@ -59,8 +68,11 @@ class PokemonActivity : ComponentActivity() {
             val pokemonName = intent.getStringExtra("pokemon_name") ?: return@setContent
             val regionName = intent.getStringExtra("region_name") ?: return@setContent
             var pokemonDetails by remember { mutableStateOf<Pokemon?>(null) }
-            var evolutionChain by remember { mutableStateOf<List<EvolutionChain>?>(null) }
+            var evolutionChainID by remember {mutableStateOf(0)}
+            var evolutionChain by remember { mutableStateOf<EvolutionChain?>(null) }
             var loadDetails by remember { mutableStateOf(false) }
+            var loadChain by remember { mutableStateOf(false) }
+
 
             if (!loadDetails) {
                 println("Cargando detalles de $pokemonName")
@@ -69,7 +81,31 @@ class PokemonActivity : ComponentActivity() {
                     loadData = {
                         pokemonDetails = it
                         loadDetails = true
-
+                        if (!loadChain){
+                            this.evolutionChainDiverAdapter.getPokemonEvolution(
+                                Pokemon_id = pokemonDetails!!.id,
+                                loadData = {
+                                    evolutionChainID = it.evolution_chain.url.split("/").dropLast(1).last().toInt()
+                                    println("Evolution Chain ID ${evolutionChainID}")
+                                    loadChain = true
+                                    if (evolutionChainID!= null){
+                                        this.evolutionChainDiverAdapter.getEvolutionChain(
+                                            evolutionChainID = evolutionChainID,
+                                            loadData = {
+                                                evolutionChain = it
+                                            },
+                                            errorData = {
+                                                println("No se pudo Cargar la evolution Chain")
+                                            }
+                                        )
+                                    }
+                                },
+                                errorData = {
+                                    println("No se pudo Cargar el ID para la Evolution Chain")
+                                    loadChain = true
+                                }
+                            )
+                        }
                     },
                     errorData = {
                         println("Error al cargar los detalles del Pokémon")
@@ -79,12 +115,18 @@ class PokemonActivity : ComponentActivity() {
             }
 
             pokemonDetails?.let { pokemonDetails ->
-                PokemonDetailScreen(
-                    pokemonDetails = pokemonDetails,
-                    pokemonName = pokemonName,
-                    volver = { Volver(regionName) },
-                    regionName = regionName
-                )
+                evolutionChain?.let {
+                    PokemonDetailScreen(
+                        pokemonDetails = pokemonDetails,
+                        pokemonName = pokemonName,
+                        evolutionChain = it,
+                        volver = { Volver(regionName) },
+                        regionName = regionName,
+                        onPokemonClick = { clickedPokemonName ->
+                            navigateToPokemonDetails(clickedPokemonName, regionName)
+                        }
+                    )
+                }
             } ?: run {
                 Box(
                     contentAlignment = Alignment.Center,
@@ -107,28 +149,42 @@ class PokemonActivity : ComponentActivity() {
         }
         startActivity(intent)
     }
+
+    private fun navigateToPokemonDetails(pokemonName: String, regionName: String) {
+        val intent = Intent(this, PokemonActivity::class.java).apply {
+            putExtra("pokemon_name", pokemonName)
+            putExtra("region_name", regionName)
+        }
+        startActivity(intent)
+    }
+
+
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PokemonDetailScreen(
     pokemonDetails: Pokemon,
+    evolutionChain: EvolutionChain,
     pokemonName: String,
     volver: () -> Unit,
-    regionName: String
+    regionName: String,
+    onPokemonClick: (String) -> Unit // Callback para manejar clics en Pokémon
 ) {
     PokedexTheme {
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text("Detalles de ${pokemonName.capitalize()}") },
+                    title = { Text("Detalles de ${pokemonName.capitalize()}",
+                        style = MaterialTheme.typography.headlineMedium )
+                         },
                     navigationIcon = {
                         IconButton(onClick = { volver() }) {
                             Icon(Icons.Default.ArrowBack, contentDescription = "Volver", tint = MaterialTheme.colorScheme.onPrimary)
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
+                        containerColor = colorResource(R.color.VerdeOscuro),
                         titleContentColor = MaterialTheme.colorScheme.onPrimary
                     )
                 )
@@ -149,7 +205,7 @@ fun PokemonDetailScreen(
                             .fillMaxWidth()
                             .padding(2.dp)
                             .background(
-                                MaterialTheme.colorScheme.primaryContainer,
+                                colorResource(R.color.VerderSuave),
                                 shape = MaterialTheme.shapes.medium
                             )
                     ) {
@@ -164,12 +220,81 @@ fun PokemonDetailScreen(
                     }
                 }
 
+                // Tipos y habilidades
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                            containerColor = colorResource(R.color.VerdeClaro)
+                        )
+                    ) {
+                        Column (
+                            modifier = Modifier.padding(16.dp).align(alignment = Alignment.CenterHorizontally),
+
+                        ){
+                            Box(
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
+                            ){
+                                Text(
+                                    text = "Tipos",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = colorResource(R.color.black)
+                                )
+                            }
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                            ) { pokemonDetails.types.forEach{ type ->
+                                Box(
+                                    modifier = Modifier
+                                        .background(colorResource(R.color.VerdeOscuro))
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                        .align(Alignment.CenterVertically)
+                                ){
+                                    Text(
+                                        text = type.type.name,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = colorResource(R.color.white)
+                                    )
+                                }
+                            }
+                            }
+                            Box(
+                                modifier = Modifier.align(Alignment.CenterHorizontally)
+                            ){
+                                Text(
+                                    text = "Habilidades",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = colorResource(R.color.black)
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.padding(8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ){ pokemonDetails.abilities.forEach { Ability ->
+                                Box(
+                                    modifier = Modifier
+                                        .background(colorResource(R.color.VerdeOscuro))
+                                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                                        .align(Alignment.CenterVertically)
+                                ){
+                                    Text(
+                                        text = Ability.ability.name,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        color = colorResource(R.color.white)
+                                    )
+                                }
+                            }
+                            }
+                        }
+                    }
+                }
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = colorResource(R.color.VerdeClaro)
                         )
                     ) {
                         Column(
@@ -178,40 +303,40 @@ fun PokemonDetailScreen(
                         ) {
                             Text(
                                 text = "Información Básica",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.primary
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = colorResource(R.color.black)
                             )
                             Text(
                                 text = "ID: ${pokemonDetails.id}",
-                                style = MaterialTheme.typography.bodyLarge
+                                style = MaterialTheme.typography.titleMedium
                             )
                             Text(
                                 text = "Región: ${regionName}",
-                                style = MaterialTheme.typography.bodyLarge
+                                style = MaterialTheme.typography.titleMedium
                             )
                             Text(
                                 text = "Nombre: ${pokemonDetails.name.capitalize()}",
-                                style = MaterialTheme.typography.bodyLarge
+                                style = MaterialTheme.typography.titleMedium
                             )
                             Text(
                                 text = "Altura: ${pokemonDetails.height} decímetros",
-                                style = MaterialTheme.typography.bodyLarge
+                                style = MaterialTheme.typography.titleMedium
                             )
                             Text(
                                 text = "Peso: ${pokemonDetails.weight} hectogramos",
-                                style = MaterialTheme.typography.bodyLarge
+                                style = MaterialTheme.typography.titleMedium
                             )
                         }
                     }
                 }
 
-                // Tipos y habilidades
+
                 item {
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer
+                            containerColor = colorResource(R.color.VerdeClaro)
                         )
                     ) {
                         Column(
@@ -219,32 +344,93 @@ fun PokemonDetailScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             Text(
-                                text = "Tipos",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer
+                                text = "Estadísticas Base",
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = colorResource(R.color.black)
                             )
-                            Text(
-                                text = pokemonDetails.types.joinToString { it.type.name.capitalize() },
-                                style = MaterialTheme.typography.bodyLarge
-                            )
-                            Divider(color = MaterialTheme.colorScheme.onTertiaryContainer)
-                            Text(
-                                text = "Habilidades",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer
-                            )
-                            Text(
-                                text = pokemonDetails.abilities.joinToString { it.ability.name.capitalize() },
-                                style = MaterialTheme.typography.bodyLarge
-                            )
+                            pokemonDetails.stats.forEach { stat ->
+                                Column {
+                                    Text(
+                                        text = "${stat.stat.name.capitalize()}: ${stat.base_stat}",
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                    LinearProgressIndicator(
+                                        progress = stat.base_stat / 100f,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(8.dp),
+                                        color = colorResource(R.color.VerdePokemon),
+                                        trackColor = colorResource(R.color.VerdeOscuro)
+                                    )
+                                }
+                            }
                         }
                     }
+                }
+                //Evolution chain
+                if (evolutionChain!= null){
+                    item {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = colorResource(R.color.VerderSuave)
+                            )
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "Cadena de Evolución",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    color = colorResource(R.color.black)
+                                )
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    val speciesList = flattenEvolutionChain(evolutionChain)
+                                    items(speciesList) { species ->
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            modifier = Modifier
+                                                .clickable { onPokemonClick(species.name) }
+
+                                        ) {
+                                            val imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${species.url.split("/").dropLast(1).last()}.png"
+                                            Image(
+                                                painter = rememberAsyncImagePainter(imageUrl),
+                                                contentDescription = "${species.name} sprite",
+                                                modifier = Modifier.size(140.dp)
+                                            )
+                                            Text(
+                                                text = species.name.capitalize(),
+                                                style = MaterialTheme.typography.titleMedium
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }else{
+                   item {
+                       Text("No hay cadena de pokemones")
+                   }
                 }
             }
         }
     }
 }
 
+fun flattenEvolutionChain(chain: EvolutionChain): List<EvolutionSpecies> {
+    val speciesList = mutableListOf(chain.species)
+    for (evolution in chain.evolves_to) {
+        speciesList.addAll(flattenEvolutionChain(evolution))
+    }
+    return speciesList
+}
 @Preview(showBackground = true, widthDp = 360)
 @Composable
 fun PokemonDetailScreenPreview() {
@@ -258,8 +444,20 @@ fun PokemonDetailScreenPreview() {
             AbilityEntry(Ability(name = "overgrow")),
             AbilityEntry(Ability(name = "chlorophyll"))
         ),
+        stats = listOf(),
         imgUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/1.png"
     )
-    PokemonDetailScreen(pokemonDetails = samplePokemon, pokemonName = "bulbasaur", volver = {}, regionName = "Kanto")
+    val sampleEvotionChain = EvolutionChain(
+        species = (EvolutionSpecies(name = "", url = "")),
+        evolves_to = emptyList()
+    )
+    PokemonDetailScreen(
+        pokemonDetails = samplePokemon,
+        pokemonName = "bulbasaur",
+        volver = {},
+        regionName = "Kanto",
+        evolutionChain = sampleEvotionChain,
+        onPokemonClick = {}
+    )
 }
 

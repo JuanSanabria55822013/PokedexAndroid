@@ -1,5 +1,6 @@
 package com.example.pokedex
 
+import TypeFiltro
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -39,6 +40,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallTopAppBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -48,20 +50,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.example.myapplicationwebservice.R
 import com.example.pokedex.services.driverAdapters.PokemonDiverAdapter
 import com.example.pokedex.dataBases.Entities.PokemonEntity
 import com.example.pokedex.dataBases.viewsModels.PokemonFavoritos
-import com.example.pokedex.services.controllers.TypeService
 import com.example.pokedex.services.driverAdapters.ListaPokemonDiverAdapter
 import com.example.pokedex.services.driverAdapters.TypeAdapter
 import com.example.pokedex.services.models.PokemonEntry
-import com.example.pokedex.services.models.PokemonSpecies
-import com.example.pokedex.services.models.TypeEntry
-import com.example.pokedex.services.models.TypeFiltro
+import com.example.pokedex.services.models.TypePokemon
 import com.example.pokedex.ui.theme.PokedexTheme
 
 
@@ -70,6 +71,7 @@ class RegionActivity : ComponentActivity() {
     val ListaPokemonDiverAdapter by lazy { ListaPokemonDiverAdapter() }
     val PokemonDiverAdapter by lazy { PokemonDiverAdapter() }
     val pokemonViewModel by lazy { PokemonFavoritos(this) }
+    val TypeDiverAdapter by lazy {TypeAdapter()}
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,13 +80,18 @@ class RegionActivity : ComponentActivity() {
         setContent {
             val regionName = intent.getStringExtra("region_name") ?: return@setContent
             var pokemonList by remember { mutableStateOf<List<PokemonEntry>>(emptyList()) }
+            var FiltroTipoPokemons by remember { mutableStateOf<List<TypePokemon>>(emptyList()) }
+            var PokemonsFiltrado by remember { mutableStateOf<List<PokemonEntry>>(emptyList())  }
+            var typeList by remember { mutableStateOf<List<TypeFiltro>>(emptyList()) }
             var LoadListaPokemons by remember { mutableStateOf<Boolean>(false) }
             if (!LoadListaPokemons) {
                 this.ListaPokemonDiverAdapter.allPokemonsByRegion(
                     regionName = regionName,
                     loadData = {
                         pokemonList = it
+                        PokemonsFiltrado = pokemonList
                         LoadListaPokemons = true
+
                     },
                     errorData = {
                         println("Error en el servicio")
@@ -92,18 +99,46 @@ class RegionActivity : ComponentActivity() {
                     }
                 )
             }
+            fun FiltradoPorTipo(tipo: String) {
+                TypeDiverAdapter.getPokemonsByType(
+                    tipo = tipo,
+                    loadData = {
+                        FiltroTipoPokemons = it
+                        val nombresFiltrados = FiltroTipoPokemons.map { it.pokemon.name }
+                        PokemonsFiltrado = pokemonList.filter { pokemonEntry ->
+                            pokemonEntry.pokemon_species.name in nombresFiltrados
+                        }
 
+                        println("Pokemons filtrados: ${PokemonsFiltrado}")
+
+                    },
+                    errorData = {
+                        println("Error al filtrar Pokémon por tipo")
+                    }
+                )
+            }
+            LaunchedEffect(Unit) {
+                val typeAdapter = TypeAdapter()
+                typeAdapter.getAllTypes(
+                    loadData = { typeList = it },
+                    errorData = { println("Error al cargar los tipos de Pokémon") }
+                )
+            }
 
 
             PokemonListScreen(
-                pokemonList = pokemonList,
+                pokemonList = PokemonsFiltrado,
                 regionName = regionName,
                 onClickPokemon = { pokemonName -> goToDetallePokemon(pokemonName, regionName) },
                 volver = { Volver() },
                 ClickFavorito = { pokemonName -> GuardarFavorito(pokemonName) },
+                typeList = typeList,
+                onTypeSelected = { Tipo -> FiltradoPorTipo(Tipo)
+                }
             )
         }
     }
+
 
     private fun goToDetallePokemon(pokemonName: String, regionName: String) {
         val intent = Intent(this, PokemonActivity::class.java).apply {
@@ -118,11 +153,16 @@ class RegionActivity : ComponentActivity() {
     }
 
 
+
     private fun GuardarFavorito(pokemonName: String) {
         PokemonDiverAdapter.getPokemonDetails(
             pokemonName = pokemonName,
             loadData = { pokemon ->
                 if (pokemon != null) {
+                    val typesJson = pokemon.types.joinToString(",") { it.type.name }
+                    val abilitiesJson = pokemon.abilities.joinToString(",") { it.ability.name }
+                    val statsJson = pokemon.stats.joinToString(",") { "${it.stat.name}:${it.base_stat.dp}" }
+
                     pokemonViewModel.savePokemonFavorito(
                         PokemonEntity(
                             id = 0, // Cambia esto según corresponda
@@ -130,7 +170,11 @@ class RegionActivity : ComponentActivity() {
                             name = pokemonName,
                             height = pokemon.height,
                             weight = pokemon.weight,
-                            imgUrl = pokemon.imgUrl
+                            imgUrl = pokemon.imgUrl,
+                            types = typesJson, // Guardamos como cadena JSON
+                            abilities = abilitiesJson, // Guardamos como cadena JSON
+                            stats = statsJson // Guardamos como cadena JSON
+
                         )
                     )
                 } else {
@@ -142,8 +186,6 @@ class RegionActivity : ComponentActivity() {
             }
         )
     }
-
-
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -153,23 +195,13 @@ fun PokemonListScreen(
     regionName: String,
     onClickPokemon: (String) -> Unit,
     ClickFavorito: (String) -> Unit,
-    volver: () -> Unit
+    volver: () -> Unit,
+    typeList: List<TypeFiltro>,
+    onTypeSelected: (String) -> Unit
 ) {
     var searchText by remember { mutableStateOf("") }
     val filteredPokemonList = pokemonList.filter {
         it.pokemon_species.name.contains(searchText, ignoreCase = true)
-    }
-
-
-
-    var typeList by remember { mutableStateOf<List<TypeFiltro>>(emptyList()) }
-
-    LaunchedEffect(Unit) {
-        val typeAdapter = TypeAdapter()
-        typeAdapter.getAllTypes(
-            loadData = { typeList = it },
-            errorData = { println("Error al cargar los tipos de Pokémon") }
-        )
     }
 
     var showModal by remember { mutableStateOf(false) }
@@ -180,31 +212,42 @@ fun PokemonListScreen(
             topBar = {
                 Column {
                     SmallTopAppBar(
-                        title = { Text(text = "Región: ${regionName.replaceFirstChar { it.uppercase() }}") },
+                        title = { Text(text = " ${regionName.replaceFirstChar { it.uppercase() }}",
+                            style = MaterialTheme.typography.headlineLarge,
+                            color = colorResource(R.color.white),
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Center,
+                        ) },
                         navigationIcon = {
                             IconButton(onClick = { volver() }) {
                                 Icon(
                                     Icons.Default.ArrowBack,
                                     contentDescription = "Volver",
-                                    tint = MaterialTheme.colorScheme.onPrimary
+                                    tint = colorResource(R.color.white)
                                 )
                             }
                         },
                         colors = TopAppBarDefaults.smallTopAppBarColors(
-                            containerColor = MaterialTheme.colorScheme.primary,
+                            containerColor = colorResource(R.color.VerdeOscuro),
                             titleContentColor = MaterialTheme.colorScheme.onPrimary
                         )
                     )
                     TextField(
                         value = searchText,
-                        onValueChange = { searchText = it },
-                        label = { Text("Buscar Pokémon") },
+                        onValueChange = { searchText = it},
+                        label = { Text("Buscar Pokémon")  },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         leadingIcon = {
-                            Icon(imageVector = Icons.Default.Search, contentDescription = "Buscar")
-                        }
+                            Icon(imageVector = Icons.Default.Search,
+                                contentDescription = "Buscar")
+                        },
+
+                        colors = TextFieldDefaults.textFieldColors(
+                            cursorColor = colorResource(R.color.VerdeOscuro),
+                        containerColor = colorResource(R.color.VerdeClaro)
+                    )
                     )
                 }
             }
@@ -214,12 +257,10 @@ fun PokemonListScreen(
                     .fillMaxSize()
                     .padding(innerPadding)
             )  {
-                    PokemonTypeDropdown(
-                        typeList = typeList,
-                        onTypeSelected = { selectedType ->
-                            println("Tipo seleccionado: ${selectedType.name}")
-                        }
-                    )
+                PokemonTypeDropdown(
+                    typeList = typeList,
+                    onTypeSelected = { onTypeSelected(it) }
+                )
                 Spacer(modifier = Modifier.height(8.dp)) // Espaciado reducido
                 if (filteredPokemonList.isEmpty()) {
                     Box(
@@ -229,29 +270,24 @@ fun PokemonListScreen(
                     ) {
                         Text(
                             text = "No se encontraron Pokémon",
-                            style = MaterialTheme.typography.titleMedium,
+                            style = MaterialTheme.typography.headlineSmall,
+                            color = colorResource(R.color.VerdeOscuro),
                             textAlign = TextAlign.Center
                         )
                     }
                 } else {
                     LazyColumn(
-                        modifier = Modifier
-                            .padding(horizontal = 16.dp)
+                        modifier = Modifier.padding(horizontal = 16.dp)
                     ) {
-
-                        items(
-                            items = filteredPokemonList,
-                            key = { it.entry_number }
-                        ) { pokemonEntry ->
+                        items(filteredPokemonList, key = { it.entry_number }) { pokemonEntry ->
                             PokemonItem(
                                 pokemonEntry = pokemonEntry,
                                 onClickPokemon = onClickPokemon,
-                                ClickFavorito = {
-                                        pokemonName ->
+                                ClickFavorito = { pokemonName ->
                                     ClickFavorito(pokemonName)
-                                    selectedPokemonName = pokemonName // Actualiza el nombre
-                                    showModal = true // Muestra el modal
-                                },
+                                    selectedPokemonName = pokemonName
+                                    showModal = true
+                                }
                             )
                         }
                     }
@@ -289,7 +325,8 @@ fun PokemonItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(vertical = 8.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+            colors = CardDefaults.cardColors(containerColor = colorResource(R.color.VerdeClaro))
         ) {
             Box(
                 contentAlignment = Alignment.Center,
@@ -298,7 +335,7 @@ fun PokemonItem(
                 Image(
                     painter = rememberAsyncImagePainter(pokemonEntry.image_url),
                     contentDescription = "${pokemonEntry.pokemon_species.name} sprite",
-                    modifier = Modifier.size(140.dp)
+                    modifier = Modifier.size(200.dp)
                 )
             }
             Row(
@@ -311,7 +348,7 @@ fun PokemonItem(
             ) {
                 Text(
                     text = pokemonEntry.pokemon_species.name.replaceFirstChar { it.uppercase() },
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.headlineSmall,
                     modifier = Modifier.weight(1f)
                 )
                 IconButton(
@@ -326,7 +363,8 @@ fun PokemonItem(
             }
             Button(
                 onClick = { ClickFavorito(pokemonEntry.pokemon_species.name) },
-                modifier = Modifier.align(Alignment.CenterHorizontally)
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.VerdeOscuro))
             ) {
                 Text("Agregar a favoritos")
             }
@@ -338,7 +376,7 @@ fun PokemonItem(
 @Composable
 fun PokemonTypeDropdown(
     typeList: List<TypeFiltro>,
-    onTypeSelected: (TypeFiltro) -> Unit
+    onTypeSelected: (String) -> Unit
 ) {
     var isDropdownExpanded by remember { mutableStateOf(false) }
     var selectedType by remember { mutableStateOf<TypeFiltro?>(null) }
@@ -351,7 +389,8 @@ fun PokemonTypeDropdown(
         Text(
             text = "Filtrar por Tipo",
             style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(bottom = 4.dp).align(Alignment.CenterHorizontally) // Menor separación
+            modifier = Modifier.padding(bottom = 4.dp).align(Alignment.CenterHorizontally),
+            // Menor separación
         )
 
         Button(
@@ -359,12 +398,12 @@ fun PokemonTypeDropdown(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp), // Ajusta la altura del botón
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.VerdeOscuro))
         ) {
             Text(
                 text = selectedType?.name ?: "Seleccionar Tipo", // Texto por defecto
                 color = MaterialTheme.colorScheme.onPrimary,
-                style = MaterialTheme.typography.titleMedium// Ajusta el estilo
+                style = MaterialTheme.typography.headlineSmall
             )
         }
 
@@ -372,25 +411,23 @@ fun PokemonTypeDropdown(
             expanded = isDropdownExpanded,
             onDismissRequest = { isDropdownExpanded = false },
             modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surface)
+                .background(colorResource(R.color.VerdeClaro))
         ) {
             typeList.forEach { type ->
                 DropdownMenuItem(
                     text = {
                         Text(
-                            text = type.name.replaceFirstChar { it.uppercase() }, // Capitaliza el nombre
-                            style = MaterialTheme.typography.bodyMedium // Ajusta estilo
+                            text =  type.name.replaceFirstChar { it.uppercase() }, // Capitaliza el nombre
+                            style = MaterialTheme.typography.titleMedium // Ajusta estilo
                         )
                     },
                     onClick = {
-                        selectedType = type
                         isDropdownExpanded = false
-                        onTypeSelected(type)
+                        selectedType = type
+                        onTypeSelected(type.name)
                     },
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp) // Espaciado interno del ítem
+                        .padding(horizontal = 8.dp)
                 )
             }
         }
@@ -399,15 +436,22 @@ fun PokemonTypeDropdown(
 
 
 
-
 @Preview(showBackground = true, widthDp = 360)
 @Composable
+
+
+
 fun PokemonListScreenPreview() {
+    val fakeListFiltro =
+    listOf(TypeFiltro(name = "normal", url = ""))
+
     PokemonListScreen(
         pokemonList = emptyList(),
         regionName = "kanto",
         onClickPokemon = {},
         ClickFavorito = {},
         volver = {},
+        typeList = fakeListFiltro,
+        onTypeSelected = {}
     )
 }

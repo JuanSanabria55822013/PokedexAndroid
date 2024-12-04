@@ -10,7 +10,7 @@ import com.example.pokedex.dataBases.daos.pokemonsDao
     entities = [
         PokemonEntity::class
     ],
-    version = 5
+    version = 6
 )
 
 abstract class AppDataBase: RoomDatabase() {
